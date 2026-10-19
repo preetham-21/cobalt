@@ -23,6 +23,14 @@ CONTRACT = """\
   (`System.exit(rc)`); STOP RUN with RETURN-CODE 0 exits 0.
 - If the COBOL handles an OPEN failure (missing input), reproduce what it prints and its
   return code (GnuCOBOL file status for a missing file is 35).
+- INDEXED (VSAM) and record SEQUENTIAL files are presented as LINE SEQUENTIAL text too: an
+  indexed input holds its records one per line (any order - build your own key index); an
+  indexed file the program writes or updates must be written back as text, one record per
+  line, in ascending primary-key order.
+- A main program with PROCEDURE DIVISION USING (a JCL PARM) receives the PARM text as
+  args[0]; the COBOL sees the usual halfword length + text.
+- The clock is pinned: use `cobalt.migrated.support.CobolClock` (now(), currentDate() for
+  FUNCTION CURRENT-DATE) instead of the system clock.
 - Output must match the COBOL byte for byte after trimming trailing spaces per record.
 - Money and every COBOL numeric is `java.math.BigDecimal` (never double/float).
 

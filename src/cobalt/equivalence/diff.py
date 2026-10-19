@@ -117,14 +117,34 @@ def _layout_fit(root: DataItem, record: str) -> int:
     return score
 
 
+def mask(records: list[str] | None, patterns: tuple[str, ...]) -> list[str] | None:
+    """Replace every match of ``patterns`` with '#' of the same length."""
+    if records is None:
+        return None
+    compiled = [re.compile(p) for p in patterns]
+    out = []
+    for record in records:
+        for rx in compiled:
+            record = rx.sub(lambda m: "#" * len(m.group(0)), record)
+        out.append(record)
+    return out
+
+
 def compare_stream(
     name: str,
     expected: bytes | str | None,
     actual: bytes | str | None,
     layouts: list[DataItem] | None = None,
+    volatile: tuple[str, ...] = (),
 ) -> StreamDiff:
-    """Compare one stream; ``None`` means the stream was not produced."""
+    """Compare one stream; ``None`` means the stream was not produced.
+
+    ``volatile`` regexes mark fields that legitimately differ between runs
+    (e.g. sub-minute timestamps); their matches are masked on both sides.
+    """
     exp, act = normalise(expected), normalise(actual)
+    if volatile:
+        exp, act = mask(exp, volatile), mask(act, volatile)
     if exp is None and act is None:
         return StreamDiff(name, "match")
     if exp is None:

@@ -79,6 +79,8 @@ class SupervisorConfig:
     use_analyst: bool = True
     use_test_writer: bool = True
     use_reviewer: bool = True
+    #: prompt size (tokens) at which an agent's context is folded into a new episode
+    context_threshold_tokens: int = 150_000
 
     def to_dict(self) -> dict[str, Any]:
         d = dict(self.__dict__)
@@ -143,10 +145,16 @@ class Supervisor:
         self._client_factory = client_factory or self._default_client
         self._context_factory = context_factory
         self.memory = memory
-        if memory is None and config.use_folding:
+        if config.use_folding:
+            from cobalt.memory.context import EpisodeCompactor
             from cobalt.memory.summaries import SummaryMemory
 
-            self.memory = SummaryMemory(self.state, run_id)
+            if memory is None:
+                self.memory = SummaryMemory(self.state, run_id)
+            if context_factory is None:
+                threshold = config.context_threshold_tokens
+                self._context_factory = lambda _program: EpisodeCompactor(threshold)
+        self._deps = {e.program: e.depends_on for e in migration_order(self.graph)}
         self._anthropic: AnthropicClient | None = None
 
     # ------------------------------------------------------------------ #
@@ -413,12 +421,23 @@ class Supervisor:
             parts.append(
                 "## Earlier attempts (do not repeat these mistakes)\n" + "\n\n".join(failures[-3:])
             )
+        deps = self._deps.get(program, [])
         if self.memory is not None and self.config.use_folding:
-            done = [d for d in self.memory.available() if d != program]
-            if done:
+            # folded context: callee summaries inline, full sources on demand
+            for dep in deps:
+                summary = self.memory.get(dep)
+                if summary:
+                    parts.append(summary)
+            others = [d for d in self.memory.available() if d != program and d not in deps]
+            if others:
                 parts.append(
-                    "## Already migrated modules (use get_summary for details)\n" + ", ".join(done)
+                    "## Other migrated modules (get_summary for details)\n" + ", ".join(others)
                 )
+        elif deps:
+            parts.append(
+                "## Callees\nRead each callee's COBOL (read_cobol) and its migrated Java "
+                "(read_file) before calling it: " + ", ".join(deps)
+            )
         return "\n\n".join(parts)
 
     def _gate(

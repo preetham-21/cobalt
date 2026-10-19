@@ -91,7 +91,7 @@ class EquivalenceHarness:
         self.corpus = corpus
         self.spec: CorpusSpec = load_corpus_spec(settings.corpus_dir / corpus)
         self._sandbox = sandbox
-        self.golden = GoldenStore(golden_root or self.spec.root / "golden")
+        self.golden = GoldenStore(golden_root or self.spec.golden_dir)
         build = settings.runs_dir / "build"
         jobs = settings.runs_dir / "jobs"
         self._build, self._jobs = build, jobs
@@ -210,15 +210,28 @@ class EquivalenceHarness:
             if golden is None:
                 report.missing_golden.append(case.name)
                 continue
-            out = runner.run(prog.name, prog.outputs, case, compiled.artifact)
+            out = runner.run(
+                prog.name,
+                prog.outputs,
+                case,
+                compiled.artifact,
+                parm=prog.parm,
+                env=self.spec.clock_env("java"),
+            )
             streams = [
                 compare_stream(
-                    name, golden.output.files.get(name), out.files.get(name), layouts.get(name)
+                    name,
+                    golden.output.files.get(name),
+                    out.files.get(name),
+                    layouts.get(name),
+                    prog.volatile,
                 )
                 for name in prog.outputs
             ]
             if prog.stdout:
-                streams.append(compare_stream("SYSOUT", golden.output.stdout, out.stdout))
+                streams.append(
+                    compare_stream("SYSOUT", golden.output.stdout, out.stdout, None, prog.volatile)
+                )
             error = None
             if out.timed_out:
                 error = "timed out"

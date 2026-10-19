@@ -1,0 +1,79 @@
+# Run specs for the AWS CardDemo batch subset.
+#
+# CardDemo itself is fetched (gitignored); this committed directory holds what
+# is needed to execute part of it off the mainframe: these specs, a stub for
+# the Language Environment abend service (stubs/), inputs that the JCL builds
+# before a step (prepare.py -> data/), and the golden outputs.
+#
+# File organisations are taken from each program's SELECT/FD: INDEXED (VSAM
+# KSDS) and record SEQUENTIAL files are given to Java as LINE SEQUENTIAL text
+# and compared as text (see cobalt.equivalence.files).
+#
+# Excluded from the subset: CBACT01C (assembler COBDATFT + variable-length
+# records), CBSTM03A/B (statement generation via ESDS/RRDS), CBEXPORT/CBIMPORT
+# (multi-record export format), and every CICS / DB2 / IMS / MQ program.
+
+[defaults]
+source_root = "../carddemo"
+copybook_dirs = ["app/cpy"]
+cobc_flags = ["-x", "-fstatic-call", "-fsign=EBCDIC"]
+stubs = ["stubs/CEE3ABD.cbl"]
+# pinned clock: CBTRN02C / CBACT04C stamp records with FUNCTION CURRENT-DATE
+current_date = "2022-07-06 10:00:00"
+# GnuCOBOL pins the start instant but lets the clock run, so the seconds and
+# fraction of DB2-style timestamps (YYYY-MM-DD-HH.MM.SS.ffffff) vary between
+# runs; they are masked on both sides. Date, hour and minute are compared.
+volatile = ['(?<=\d{4}-\d\d-\d\d-\d\d\.\d\d\.)\d\d\.\d{6}']
+
+# READCARD.jcl: list the card master
+[programs.CBACT02C]
+sources = ["app/cbl/CBACT02C.cbl"]
+inputs = { CARDFILE = "app/data/ASCII/carddata.txt" }
+outputs = []
+stdout = true
+
+# READXREF.jcl: list the card cross-reference
+[programs.CBACT03C]
+sources = ["app/cbl/CBACT03C.cbl"]
+inputs = { XREFFILE = "app/data/ASCII/cardxref.txt" }
+outputs = []
+stdout = true
+
+# READCUST.jcl: list the customer master
+[programs.CBCUS01C]
+sources = ["app/cbl/CBCUS01C.cbl"]
+inputs = { CUSTFILE = "app/data/ASCII/custdata.txt" }
+outputs = []
+stdout = true
+
+# validate daily transactions against the masters
+[programs.CBTRN01C]
+sources = ["app/cbl/CBTRN01C.cbl"]
+inputs = { DALYTRAN = "app/data/ASCII/dailytran.txt", CUSTFILE = "app/data/ASCII/custdata.txt", XREFFILE = "app/data/ASCII/cardxref.txt", CARDFILE = "app/data/ASCII/carddata.txt", ACCTFILE = "app/data/ASCII/acctdata.txt", TRANFILE = "app/data/ASCII/dailytran.txt" }
+outputs = []
+stdout = true
+
+# POSTTRAN.jcl: post daily transactions, update balances, write rejects
+[programs.CBTRN02C]
+sources = ["app/cbl/CBTRN02C.cbl"]
+inputs = { DALYTRAN = "app/data/ASCII/dailytran.txt", XREFFILE = "app/data/ASCII/cardxref.txt", ACCTFILE = "app/data/ASCII/acctdata.txt", TCATBALF = "app/data/ASCII/tcatbal.txt" }
+outputs = ["TRANFILE", "DALYREJS", "ACCTFILE", "TCATBALF"]
+stdout = true
+expected_rc = 4  # CardDemo sets RETURN-CODE 4 when any transaction is rejected
+
+# TRANREPT.jcl: transaction detail report for a date range
+[programs.CBTRN03C]
+sources = ["app/cbl/CBTRN03C.cbl"]
+inputs = { CARDXREF = "app/data/ASCII/cardxref.txt", TRANTYPE = "app/data/ASCII/trantype.txt", TRANCATG = "app/data/ASCII/trancatg.txt" }
+support_inputs = { TRANFILE = "data/tranrept-input.txt", DATEPARM = "data/dateparm.txt" }
+outputs = ["TRANREPT"]
+stdout = true
+
+# INTCALC.jcl: monthly interest on category balances (PARM='2022071800')
+[programs.CBACT04C]
+sources = ["app/cbl/CBACT04C.cbl"]
+inputs = { TCATBALF = "app/data/ASCII/tcatbal.txt", XREFFILE = "app/data/ASCII/cardxref.txt", ACCTFILE = "app/data/ASCII/acctdata.txt", DISCGRP = "app/data/ASCII/discgrp.txt" }
+support_inputs = { PARM = "data/intcalc.parm" }
+outputs = ["ACCTFILE", "TRANSACT"]
+stdout = true
+parm = true

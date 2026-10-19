@@ -17,6 +17,16 @@ import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from cobalt.equivalence.files import (
+    FileLayout,
+    file_layouts,
+    fixed_to_text,
+    indexed_utility,
+    parm_driver,
+    parm_text,
+    run_script,
+    text_to_fixed,
+)
 from cobalt.equivalence.spec import CorpusSpec, ProgramSpec, TestCase
 from cobalt.sandbox import ExecResult, Sandbox, new_job_dir, remove_job_dir
 
@@ -101,6 +111,7 @@ class CobolRunner:
         self.sandbox = sandbox
         self.build_root = build_root
         self.jobs_root = jobs_root
+        self._layouts: dict[str, dict[str, FileLayout]] = {}
 
     def _copybooks(self) -> list[Path]:
         return [
@@ -111,41 +122,106 @@ class CobolRunner:
             if p.is_file()
         ]
 
-    def compile(self, prog: ProgramSpec) -> CompileResult:
-        sources = [*prog.sources, *self.spec.stubs]
-        key = _digest([*sources, *self._copybooks()], *self.spec.cobc_flags)
-        out_dir = self.build_root / "cobol" / prog.name / key
-        exe = out_dir / prog.name
+    def layouts(self, prog: ProgramSpec) -> dict[str, FileLayout]:
+        """File layouts of a program (cached per program)."""
+        cached = self._layouts.get(prog.name)
+        if cached is None:
+            cached = file_layouts(prog.sources[0], list(self.spec.copybook_dirs))
+            self._layouts[prog.name] = cached
+        return cached
+
+    def _compile_sources(
+        self, name: str, out_name: str, sources: list[tuple[str, bytes]], key_extra: str = ""
+    ) -> CompileResult:
+        """Compile (sources given as (file name, bytes)) into a cached executable."""
+        h = hashlib.sha256()
+        for fname, data in sources:
+            h.update(fname.encode())
+            h.update(data)
+        for cb in self._copybooks():
+            h.update(cb.name.encode())
+            h.update(cb.read_bytes())
+        h.update(" ".join(self.spec.cobc_flags).encode())
+        h.update(key_extra.encode())
+        out_dir = self.build_root / "cobol" / name / h.hexdigest()[:16]
+        exe = out_dir / out_name
         if exe.is_file():
             return CompileResult(True, exe, "", cached=True)
-        job = new_job_dir(self.jobs_root, f"cobc-{prog.name}")
+        job = new_job_dir(self.jobs_root, f"cobc-{name}")
         try:
             (job / "src").mkdir()
             (job / "copy").mkdir()
             for cb in self._copybooks():
                 shutil.copyfile(cb, job / "copy" / cb.name)
             names = []
-            for src in sources:
-                shutil.copyfile(src, job / "src" / src.name)
-                names.append(f"src/{src.name}")
-            argv = ["cobc", *self.spec.cobc_flags, "-Icopy", "-o", prog.name, *names]
+            for fname, data in sources:
+                (job / "src" / fname).write_bytes(data)
+                names.append(f"src/{fname}")
+            argv = ["cobc", *self.spec.cobc_flags, "-Icopy", "-o", out_name, *names]
             res = self.sandbox.run(argv, job)
             log = (res.stdout + res.stderr).strip()
-            if not res.ok or not (job / prog.name).is_file():
+            if not res.ok or not (job / out_name).is_file():
                 return CompileResult(False, None, log, duration_s=res.duration_s)
             out_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(job / prog.name, exe)
+            shutil.copy2(job / out_name, exe)
             return CompileResult(True, exe, log, duration_s=res.duration_s)
         finally:
             remove_job_dir(job)
 
+    def compile(self, prog: ProgramSpec) -> CompileResult:
+        sources = [(p.name, p.read_bytes()) for p in [*prog.sources, *self.spec.stubs]]
+        if prog.parm:
+            sources.insert(0, ("COBDRIVR.cbl", parm_driver(prog.name).encode()))
+        return self._compile_sources(prog.name, prog.name, sources)
+
+    def _utility(self, kind: str, layout: FileLayout) -> Path:
+        name = f"{kind}_{layout.utility_suffix}"
+        result = self._compile_sources(
+            "_adapters", name, [(f"{kind}.cbl", indexed_utility(kind, layout).encode())]
+        )
+        if not result.ok or result.artifact is None:
+            raise RuntimeError(f"cannot build file adapter {name}: {result.log}")
+        return result.artifact
+
     def run(self, prog: ProgramSpec, case: TestCase, exe: Path) -> RunOutput:
+        layouts = self.layouts(prog)
         job = new_job_dir(self.jobs_root, f"cob-{prog.name}-{case.name}")
         try:
             shutil.copy2(exe, job / exe.name)
-            _copy_inputs(case, job)
-            res = self.sandbox.run(["bash", "-c", f"chmod +x ./{exe.name} && ./{exe.name}"], job)
-            return _collect(job, prog.outputs, res)
+            loaded: list[str] = []
+            for logical, src in case.inputs.items():
+                lay = layouts.get(logical)
+                if lay is None or lay.organization == "line-sequential":
+                    shutil.copyfile(src, job / logical)
+                elif lay.organization == "indexed":
+                    shutil.copyfile(src, job / f"{logical}.seq")
+                    util = self._utility("IDXLOAD", lay)
+                    shutil.copy2(util, job / util.name)
+                    loaded.append(logical)
+                else:
+                    (job / logical).write_bytes(text_to_fixed(src.read_bytes(), lay.record_length))
+            dumped = [
+                o
+                for o in prog.outputs
+                if (lay := layouts.get(o)) is not None and lay.organization == "indexed"
+            ]
+            for logical in dumped:
+                util = self._utility("IDXDUMP", layouts[logical])
+                shutil.copy2(util, job / util.name)
+            (job / "run.sh").write_text(
+                run_script(exe.name, layouts, loaded, dumped), encoding="utf-8", newline="\n"
+            )
+            res = self.sandbox.run(["bash", "run.sh"], job, env=self.spec.clock_env("cobol"))
+            out = _collect(job, prog.outputs, res)
+            for logical, data in out.files.items():
+                lay = layouts.get(logical)
+                if (
+                    data is not None
+                    and lay is not None
+                    and lay.organization in ("sequential", "record-sequential")
+                ):
+                    out.files[logical] = fixed_to_text(data, lay.record_length)
+            return out
         finally:
             remove_job_dir(job)
 
@@ -241,12 +317,21 @@ class JavaRunner:
             remove_job_dir(job)
 
     def run(
-        self, program: str, outputs: tuple[str, ...], case: TestCase, classes: Path
+        self,
+        program: str,
+        outputs: tuple[str, ...],
+        case: TestCase,
+        classes: Path,
+        *,
+        parm: bool = False,
+        env: dict[str, str] | None = None,
     ) -> RunOutput:
+        """Run the main class; a JCL PARM (file ``PARM``) becomes ``args[0]``."""
         job = new_job_dir(self.jobs_root, f"java-{program}-{case.name}")
         try:
             shutil.copytree(classes, job / "classes")
             _copy_inputs(case, job)
+            args = [parm_text(case.inputs.get("PARM"))] if parm else []
             argv = [
                 "java",
                 f"-Xmx{self.heap_mb}m",
@@ -258,8 +343,9 @@ class JavaRunner:
                 "-cp",
                 "classes",
                 main_class(program),
+                *args,
             ]
-            res = self.sandbox.run(argv, job)
+            res = self.sandbox.run(argv, job, env=env)
             return _collect(job, outputs, res)
         finally:
             remove_job_dir(job)

@@ -85,6 +85,7 @@ class FileDef:
     organization: str = "sequential"
     access: str = "sequential"
     record_key: str | None = None
+    alternate_keys: list[tuple[str, bool]] = field(default_factory=list)  # (name, duplicates)
     status_field: str | None = None
     records: list[str] = field(default_factory=list)  # 01-level record names
     line: int = 0

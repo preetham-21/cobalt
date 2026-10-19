@@ -193,9 +193,14 @@ def _parse_file_control(lines: list[SourceLine]) -> list[FileDef]:
         acc = re.search(r"\bACCESS\s+(?:MODE\s+)?(?:IS\s+)?(SEQUENTIAL|RANDOM|DYNAMIC)", s.text)
         if acc:
             f.access = acc.group(1).lower()
-        key = re.search(rf"\bRECORD\s+KEY\s+(?:IS\s+)?({_W})", s.text)
+        key = re.search(rf"(?<!ALTERNATE )\bRECORD\s+KEY\s+(?:IS\s+)?({_W})", s.text)
         if key:
             f.record_key = key.group(1)
+        for alt in re.finditer(
+            rf"\bALTERNATE\s+(?:RECORD\s+)?(?:KEY\s+)?(?:IS\s+)?({_W})(\s+WITH\s+DUPLICATES)?",
+            s.text,
+        ):
+            f.alternate_keys.append((alt.group(1), bool(alt.group(2))))
         status = re.search(rf"\bSTATUS\s+(?:IS\s+)?({_W})", s.text)
         if status:
             f.status_field = status.group(1)

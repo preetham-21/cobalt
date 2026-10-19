@@ -212,6 +212,7 @@ class AgentLoop:
                     episode=state["episodes"],
                     old_messages=len(messages),
                     old_input_tokens=last_input,
+                    composition=getattr(self.context, "last_composition", None),
                 )
                 messages = replacement
                 state["recent"] = []

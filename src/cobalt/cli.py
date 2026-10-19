@@ -28,6 +28,8 @@ app.command("golden")(equivalence_cli.golden)
 app.command("equiv")(equivalence_cli.equiv)
 app.command("sandbox")(equivalence_cli.sandbox)
 app.command("migrate")(agents_cli.migrate)
+app.command("runs")(agents_cli.runs)
+app.command("status")(agents_cli.status)
 
 
 def _version(value: bool) -> None:

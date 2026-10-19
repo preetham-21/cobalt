@@ -1,0 +1,13 @@
+{
+  "case": "default",
+  "input_sha": "1ae765cc14ecddb6",
+  "missing": [],
+  "outputs": [
+    "TRANREPT"
+  ],
+  "program": "CBTRN03C",
+  "returncode": 0,
+  "source_sha": "15eb7a160c93b1c3",
+  "stdout_compared": true,
+  "toolchain": "cobc (GnuCOBOL) 3.2.0"
+}

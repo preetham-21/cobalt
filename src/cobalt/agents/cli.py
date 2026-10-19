@@ -101,3 +101,39 @@ def migrate(
         )
         failures += 0 if result.ok else 1
     raise typer.Exit(0 if failures == 0 else 1)
+
+
+def runs() -> None:
+    """List migration runs recorded in runs/cobalt.db."""
+    from cobalt.memory.state import MigrationState
+
+    state = MigrationState(get_settings().runs_dir / "cobalt.db")
+    rows = state.runs()
+    if not rows:
+        typer.echo("(no runs yet)")
+    for r in rows:
+        mods = state.modules(r["run_id"])
+        accepted = sum(1 for m in mods if m.status == "accepted")
+        cost = sum(m.cost_usd for m in mods)
+        typer.echo(
+            f"{r['run_id']:<28} {r['corpus']:<10} {r['status']:<9} "
+            f"accepted {accepted}/{len(mods)}  ${cost:.3f}  "
+            f"provider={r['config'].get('provider')}"
+        )
+
+
+def status(run_id: str) -> None:
+    """Show every module of a run: status, attempts, spend and verdict."""
+    from cobalt.memory.state import MigrationState
+
+    state = MigrationState(get_settings().runs_dir / "cobalt.db")
+    mods = state.modules(run_id)
+    if not mods:
+        typer.echo(f"no run {run_id}", err=True)
+        raise typer.Exit(1)
+    for m in mods:
+        typer.echo(
+            f"{m.program:<10} {m.status:<12} attempts={m.attempts} "
+            f"tokens={m.tokens:<8} ${m.cost_usd:.3f}  {m.failure or ''} "
+            f"{(m.verdict or '')[:70]}"
+        )

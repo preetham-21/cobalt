@@ -1,0 +1,11 @@
+{
+  "case": "default",
+  "input_sha": "711b1a6971e35e16",
+  "missing": [],
+  "outputs": [],
+  "program": "CBACT02C",
+  "returncode": 0,
+  "source_sha": "e42c228fe6e1e31f",
+  "stdout_compared": true,
+  "toolchain": "cobc (GnuCOBOL) 3.2.0"
+}

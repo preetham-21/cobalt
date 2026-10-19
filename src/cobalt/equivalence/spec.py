@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import tomllib
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -30,7 +30,12 @@ class ProgramSpec:
     outputs: tuple[str, ...]
     stdout: bool
     expected_rc: int
-    indexed: dict[str, str] = field(default_factory=dict)  # logical -> key spec
+    #: the program takes a JCL PARM (PROCEDURE DIVISION USING); the PARM text
+    #: is the input file named ``PARM`` (COBOL gets it via a generated driver,
+    #: Java as ``args[0]``)
+    parm: bool = False
+    #: regexes for fields that legitimately vary between runs (masked in diffs)
+    volatile: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -42,6 +47,22 @@ class CorpusSpec:
     cobc_flags: tuple[str, ...]
     stubs: tuple[Path, ...]
     programs: dict[str, ProgramSpec]
+    spec_dir: Path = Path()
+    cases_dir: Path = Path()
+    golden_dir: Path = Path()
+    #: pinned "now" for both languages ("YYYY-MM-DD HH:MM:SS"), or None
+    current_date: str | None = None
+
+    def clock_env(self, language: str) -> dict[str, str]:
+        """Environment that pins the clock for a COBOL or Java run."""
+        if not self.current_date:
+            return {}
+        if language == "cobol":
+            # compact form: GnuCOBOL then also pins hundredths to 00 (the
+            # "YYYY/MM/DD HH:MM:SS" form takes them from the real clock)
+            digits = "".join(c for c in self.current_date if c.isdigit())
+            return {"COB_CURRENT_DATE": digits}
+        return {"COBALT_CURRENT_DATE": self.current_date.replace(" ", "T")}
 
     def program(self, name: str) -> ProgramSpec:
         try:
@@ -63,30 +84,58 @@ class TestCase:
     source: str  # "default" | "corpus" | "extra"
 
 
+def spec_path(corpus_root: Path) -> Path:
+    """Where a corpus's run spec lives.
+
+    ``<corpus>/runs.toml`` for corpora we own; for an external corpus that is
+    fetched and gitignored (CardDemo), a committed sibling directory
+    ``<corpus>-support/runs.toml`` holding the spec, stubs, cases and golden.
+    """
+    inside = corpus_root / "runs.toml"
+    if inside.is_file():
+        return inside
+    return corpus_root.parent / f"{corpus_root.name}-support" / "runs.toml"
+
+
 def load_corpus_spec(corpus_root: Path) -> CorpusSpec:
-    """Read ``<corpus_root>/runs.toml``."""
-    path = corpus_root / "runs.toml"
+    """Read a corpus's run spec (see :func:`spec_path`).
+
+    ``[defaults] source_root`` (relative to the spec file, default ".") is the
+    base of program sources, inputs and copybook dirs; ``stubs``, ``cases_dir``
+    and ``golden_dir`` are relative to the spec file.
+    """
+    path = spec_path(corpus_root)
     if not path.is_file():
         raise FileNotFoundError(f"{path} not found: corpus is not executable")
+    spec_dir = path.parent
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
     defaults = raw.get("defaults", {})
+    src = (spec_dir / defaults.get("source_root", ".")).resolve()
     programs: dict[str, ProgramSpec] = {}
     for name, prog in raw.get("programs", {}).items():
+        inputs = {k: src / v for k, v in prog.get("inputs", {}).items()}
+        for k, v in prog.get("support_inputs", {}).items():
+            inputs[k] = spec_dir / v
         programs[name.upper()] = ProgramSpec(
             name=name.upper(),
-            sources=tuple(corpus_root / s for s in prog["sources"]),
-            inputs={k: corpus_root / v for k, v in prog.get("inputs", {}).items()},
+            sources=tuple(src / s for s in prog["sources"]),
+            inputs=inputs,
             outputs=tuple(prog.get("outputs", [])),
             stdout=bool(prog.get("stdout", False)),
             expected_rc=int(prog.get("expected_rc", 0)),
-            indexed=dict(prog.get("indexed", {})),
+            parm=bool(prog.get("parm", False)),
+            volatile=tuple(prog.get("volatile", defaults.get("volatile", []))),
         )
     return CorpusSpec(
         root=corpus_root,
-        copybook_dirs=tuple(corpus_root / d for d in defaults.get("copybook_dirs", [])),
+        copybook_dirs=tuple(src / d for d in defaults.get("copybook_dirs", [])),
         cobc_flags=tuple(defaults.get("cobc_flags", ["-x"])),
-        stubs=tuple(corpus_root / s for s in defaults.get("stubs", [])),
+        stubs=tuple(spec_dir / s for s in defaults.get("stubs", [])),
         programs=programs,
+        spec_dir=spec_dir,
+        cases_dir=spec_dir / defaults.get("cases_dir", "cases"),
+        golden_dir=spec_dir / defaults.get("golden_dir", "golden"),
+        current_date=defaults.get("current_date"),
     )
 
 
@@ -97,7 +146,7 @@ def discover_cases(
     prog = spec.program(program)
     cases = [TestCase(prog.name, "default", dict(prog.inputs), "default")]
     seen = {"default"}
-    roots = [(spec.root / "cases", "corpus"), *((Path(r), "extra") for r in extra_roots)]
+    roots = [(spec.cases_dir, "corpus"), *((Path(r), "extra") for r in extra_roots)]
     for root, source in roots:
         base = root / prog.name
         if not base.is_dir():
