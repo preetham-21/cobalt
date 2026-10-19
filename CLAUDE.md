@@ -230,3 +230,21 @@ until told to.
   inputs are copied under their logical names.
 - Inside the dev container `COBALT_IN_DOCKER=1`; Makefile targets then run
   directly instead of re-entering `docker compose`.
+- Execution goes through `cobalt.sandbox` (`COBALT_SANDBOX=auto|docker|wsl|local`). On
+  Windows without Docker, `scripts/wsl_toolchain.sh` installs GnuCOBOL 3.2 + JDK 21
+  rootless in WSL; commands run under `unshare -rn` (no network), `timeout`, `prlimit`.
+  The orchestrator itself (Python) runs on the host venv.
+- Java contract: package `cobalt.migrated.<prog>`, class `<Prog>`, files by logical name in
+  the cwd, every organisation presented as LINE SEQUENTIAL text (indexed outputs in key
+  order), JCL PARM as `args[0]`, clock via `CobolClock`. Shared runtime: `java-runtime/`.
+- External corpora keep their run spec, stubs, derived inputs and golden outputs in a
+  committed `<corpus>-support/` directory (see `corpus/carddemo-support/runs.toml`).
+- Golden outputs are committed and must stay fresh (`tests/test_equivalence.py`,
+  `tests/test_memory.py`); regenerate with `cobalt golden -c <corpus> --force`.
+- Agents never edit conversation history (preserved thinking); context management starts
+  a new episode (`cobalt.memory.context.EpisodeCompactor`).
+- The Supervisor is deterministic code by design; only the four worker roles are LLMs.
+- `--provider replay` re-enacts `baselines/` through the real harness for offline demos and
+  tests; it is never reported as model performance.
+- Patch files with the edit tool, not with heredoc-generated Python that contains `\n`
+  escapes (they get expanded into literal newlines).

@@ -10,7 +10,7 @@ RUN := $(COMPOSE) run --rm dev
 endif
 
 .DEFAULT_GOAL := help
-.PHONY: help build shell smoke test lint fmt corpus data inventory clean
+.PHONY: help build shell smoke test lint fmt corpus data inventory golden equiv demo eval clean
 
 help: ## List targets
 	@grep -E '^[a-z][a-z-]*:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-10s %s\n", $$1, $$2}'
@@ -43,6 +43,19 @@ data: ## Regenerate the synthetic data files
 
 inventory: ## Inventory all corpora
 	$(RUN) cobalt inventory
+
+golden: ## Capture golden outputs (synthetic and CardDemo)
+	$(RUN) cobalt golden -c synthetic
+	$(RUN) cobalt golden -c carddemo
+
+equiv: ## Check the reference Java against golden outputs
+	$(RUN) cobalt equiv
+
+demo: ## End-to-end demo (offline replay; LIVE=1 for the real model)
+	$(RUN) python scripts/demo.py $(if $(LIVE),--live,)
+
+eval: ## Ablation eval with the real model (needs ANTHROPIC_API_KEY)
+	$(RUN) cobalt eval --provider anthropic
 
 clean: ## Remove generated run artefacts
 	$(RUN) bash -c 'find runs workspace -mindepth 1 ! -name .gitkeep -exec rm -rf {} +'

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -48,7 +49,13 @@ def main(
         typer.Option("--version", callback=_version, is_eager=True, help="Show version."),
     ] = False,
 ) -> None:
-    """Configure logging for every command."""
+    """Configure logging (and UTF-8 output) for every command."""
+    for stream in (sys.stdout, sys.stderr):
+        # Windows consoles/pipes default to a legacy code page that cannot
+        # encode table borders; never let output encoding crash a command.
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
     configure_logging(get_settings())
 
 
