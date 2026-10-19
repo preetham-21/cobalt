@@ -266,6 +266,10 @@ class Supervisor:
         order = migration_order(self.graph)
         deps = {e.program: e.depends_on for e in order}
         names = [e.program for e in order if programs is None or e.program in programs]
+        if not self.config.use_graph:
+            # ablation: no dependency knowledge - plain name order, no blocking
+            names = sorted(names)
+            deps = {}
         resumed = self.state.start_run(self.run_id, self.corpus, self.config.to_dict())
         tracer = Tracer(
             self.settings.runs_dir,
@@ -338,7 +342,7 @@ class Supervisor:
         self.state.set_status(self.run_id, program, "in_progress")
         self._decide(tracer, program, "start")
         probe = self._ctx(program, ROLES["translator"])
-        module = describe_module(probe)
+        module = self._describe(probe)
         main_program = probe.has_run_spec
 
         analysis = self.state.artifact(self.run_id, program, "analysis")
@@ -356,7 +360,7 @@ class Supervisor:
             res, _ = self._run_role(program, ROLES["test_writer"], task_message(module, extra), 1)
             tests = res.summary or "(no new cases)"
             self.state.put_artifact(self.run_id, program, "tests", tests)
-            module = describe_module(probe)  # refresh the case list
+            module = self._describe(probe)  # refresh the case list
 
         done = sum(
             1 for a in self.state.attempts(self.run_id, program) if a["role"] == "translator"
@@ -410,6 +414,18 @@ class Supervisor:
         )
         self._decide(tracer, program, "fail", last_failure or "")
 
+    def _describe(self, ctx: MigrationContext) -> dict[str, Any]:
+        """Module facts for the task; without the graph, callee facts are withheld."""
+        module = describe_module(ctx)
+        if not self.config.use_graph:
+            module.pop("dependencies", None)
+            module.pop("callers", None)
+            module["note"] = (
+                "Dependency information is unavailable: read the source to find "
+                "any CALLed programs."
+            )
+        return module
+
     def _translator_brief(self, program: str, analysis: str | None, tests: str | None) -> str:
         parts = []
         if analysis:
@@ -421,7 +437,7 @@ class Supervisor:
             parts.append(
                 "## Earlier attempts (do not repeat these mistakes)\n" + "\n\n".join(failures[-3:])
             )
-        deps = self._deps.get(program, [])
+        deps = self._deps.get(program, []) if self.config.use_graph else []
         if self.memory is not None and self.config.use_folding:
             # folded context: callee summaries inline, full sources on demand
             for dep in deps:

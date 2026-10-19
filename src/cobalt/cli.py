@@ -12,6 +12,7 @@ from cobalt import __version__
 from cobalt.agents import cli as agents_cli
 from cobalt.config import get_settings
 from cobalt.equivalence import cli as equivalence_cli
+from cobalt.evals import cli as evals_cli
 from cobalt.graph.cli import app as graph_app
 from cobalt.inventory import available_corpora, build_inventory
 from cobalt.inventory.report import render, to_json, write_json
@@ -30,6 +31,8 @@ app.command("sandbox")(equivalence_cli.sandbox)
 app.command("migrate")(agents_cli.migrate)
 app.command("runs")(agents_cli.runs)
 app.command("status")(agents_cli.status)
+app.command("eval")(evals_cli.eval_cmd)
+app.command("report")(evals_cli.report_cmd)
 
 
 def _version(value: bool) -> None:
