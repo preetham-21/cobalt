@@ -9,6 +9,7 @@ import typer
 from rich.console import Console
 
 from cobalt import __version__
+from cobalt.agents import cli as agents_cli
 from cobalt.config import get_settings
 from cobalt.equivalence import cli as equivalence_cli
 from cobalt.graph.cli import app as graph_app
@@ -26,6 +27,7 @@ app.add_typer(graph_app, name="graph")
 app.command("golden")(equivalence_cli.golden)
 app.command("equiv")(equivalence_cli.equiv)
 app.command("sandbox")(equivalence_cli.sandbox)
+app.command("migrate")(agents_cli.migrate)
 
 
 def _version(value: bool) -> None:

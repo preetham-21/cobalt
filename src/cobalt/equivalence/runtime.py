@@ -162,39 +162,49 @@ class JavaRunner:
     """
 
     def __init__(
-        self, sandbox: Sandbox, build_root: Path, jobs_root: Path, heap_mb: int = 512
+        self,
+        sandbox: Sandbox,
+        build_root: Path,
+        jobs_root: Path,
+        heap_mb: int = 512,
+        runtime_root: Path | None = None,
     ) -> None:
         self.sandbox = sandbox
         self.build_root = build_root
         self.jobs_root = jobs_root
         self.heap_mb = heap_mb
+        #: Maven-layout project holding the shared support runtime
+        #: (``cobalt.migrated.support``), compiled together with every program.
+        self.runtime_root = runtime_root
 
-    @staticmethod
-    def sources(project: Path, programs: list[str]) -> list[Path]:
+    def sources(self, project: Path, programs: list[str]) -> list[tuple[Path, Path]]:
+        """(source root, file) pairs to compile: program packages + runtime."""
         base = project / "src" / "main" / "java"
-        out: list[Path] = []
+        out: list[tuple[Path, Path]] = []
         for prog in programs:
             pkg = base / java_package_dir(prog)
             if pkg.is_dir():
-                out.extend(sorted(pkg.rglob("*.java")))
-        support = base / Path(*JAVA_ROOT_PACKAGE.split(".")) / "support"
-        if support.is_dir():
-            out.extend(sorted(support.rglob("*.java")))
+                out.extend((base, f) for f in sorted(pkg.rglob("*.java")))
+        if self.runtime_root is not None:
+            rbase = self.runtime_root / "src" / "main" / "java"
+            support = rbase / Path(*JAVA_ROOT_PACKAGE.split(".")) / "support"
+            out.extend((rbase, f) for f in sorted(support.rglob("*.java")))
         return out
 
     def compile(self, project: Path, programs: list[str]) -> CompileResult:
-        sources = self.sources(project, programs)
-        if not sources:
+        pairs = self.sources(project, programs)
+        if not any(base == project / "src" / "main" / "java" for base, _ in pairs):
             return CompileResult(False, None, f"no Java sources for {programs} under {project}")
-        key = _digest(sources, "javac-21")
+        key = _digest(
+            [f for _, f in pairs], "javac-21", *(f.relative_to(b).as_posix() for b, f in pairs)
+        )
         out_dir = self.build_root / "java" / key / "classes"
         if out_dir.is_dir():
             return CompileResult(True, out_dir, "", cached=True)
-        base = project / "src" / "main" / "java"
         job = new_job_dir(self.jobs_root, f"javac-{programs[0]}")
         try:
             rels = []
-            for src in sources:
+            for base, src in pairs:
                 rel = src.relative_to(base)
                 dest = job / "src" / rel
                 dest.parent.mkdir(parents=True, exist_ok=True)

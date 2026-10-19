@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     wsl_env_script: str = "$HOME/.local/cobalt-toolchain/env.sh"
     exec_timeout_s: float = 120.0
 
+    # optional relocation of generated artefacts (tests, CI)
+    runs_root: Path | None = None
+    workspace_root: Path | None = None
+
     @property
     def corpus_dir(self) -> Path:
         """Directory holding all corpora."""
@@ -64,7 +68,7 @@ class Settings(BaseSettings):
     @property
     def runs_dir(self) -> Path:
         """Directory for logs, traces and reports."""
-        return self.root / "runs"
+        return self.runs_root or self.root / "runs"
 
     @property
     def logs_dir(self) -> Path:
@@ -74,7 +78,7 @@ class Settings(BaseSettings):
     @property
     def workspace_dir(self) -> Path:
         """Directory for generated Java projects."""
-        return self.root / "workspace"
+        return self.workspace_root or self.root / "workspace"
 
     def secret_values(self) -> list[str]:
         """Raw secret strings, for log redaction only. Never print these."""

@@ -19,7 +19,11 @@ from cobalt.config import Settings
 
 LOG_FILE_NAME = "cobalt.jsonl"
 REDACTED = "***REDACTED***"
-_SECRET_KEY = re.compile(r"(api[_-]?key|secret|token|password|authorization)", re.IGNORECASE)
+# whole key names (or *_suffixes) that hold secrets; "max_input_tokens" is not one
+_SECRET_KEY = re.compile(
+    r"^(?:.*[_-])?(api[_-]?key|secret|password|authorization|token|access[_-]?token)$",
+    re.IGNORECASE,
+)
 
 EventDict = MutableMapping[str, Any]
 

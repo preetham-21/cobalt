@@ -106,7 +106,9 @@ class EquivalenceHarness:
         return CobolRunner(self.spec, self.sandbox, self._build, self._jobs)
 
     def java(self) -> JavaRunner:
-        return JavaRunner(self.sandbox, self._build, self._jobs)
+        return JavaRunner(
+            self.sandbox, self._build, self._jobs, runtime_root=self.settings.root / "java-runtime"
+        )
 
     def cases(self, program: str, extra_roots: Iterable[Path] = ()) -> list[TestCase]:
         return discover_cases(self.spec, program, extra_roots)

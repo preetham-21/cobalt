@@ -108,3 +108,25 @@ class GoldenStore:
             and g.meta.get("source_sha") == source_sha
             and g.meta.get("input_sha") == input_digest(case)
         )
+
+
+class LayeredGoldenStore(GoldenStore):
+    """Reads from several stores in order; writes to the first.
+
+    Lets a migration run add agent-written test cases (golden in the run's
+    workspace) on top of the committed corpus golden outputs.
+    """
+
+    def __init__(self, stores: list[GoldenStore]) -> None:
+        super().__init__(stores[0].root)
+        self.stores = stores
+
+    def load(self, program: str, case: str) -> Golden | None:
+        for store in self.stores:
+            found = GoldenStore.load(store, program, case)
+            if found is not None:
+                return found
+        return None
+
+    def is_fresh(self, prog: ProgramSpec, case: TestCase, source_sha: str) -> bool:
+        return any(GoldenStore.is_fresh(s, prog, case, source_sha) for s in self.stores)
