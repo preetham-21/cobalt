@@ -12,7 +12,7 @@ from typing import Any
 
 from cobalt.evals.metrics import TAXONOMY
 
-DASH = "2013"  # en dash for missing values
+DASH = chr(0x2013)  # en dash for missing values
 SERIES_LIGHT = [
     "#2a78d6",
     "#eb6834",
