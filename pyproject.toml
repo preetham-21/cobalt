@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cobalt"
+version = "0.1.0"
+description = "Agentic COBOL-to-Java migration with proven behavioural equivalence."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Apache-2.0" }
+# Direct dependencies are pinned exactly for reproducible runs.
+dependencies = [
+    "typer==0.27.3",
+    "rich==15.0.0",
+    "pydantic==2.14.1",
+    "pydantic-settings==2.16.0",
+    "structlog==26.1.0",
+    "networkx==3.7",
+    "anthropic==1.15.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "ruff==0.17.1",
+]
+
+[project.scripts]
+cobalt = "cobalt.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cobalt"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "ANN"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN"]

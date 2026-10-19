@@ -1,0 +1,43 @@
+# How to compile and execute each synthetic main program.
+#
+#   sources : COBOL sources linked into one executable; the first is the
+#             main program, the rest are statically CALLed subprograms.
+#   inputs  : logical file name (the ASSIGN TO literal) -> input file.
+#   outputs : logical names of the files the program writes.
+#   stdout  : true if the program's DISPLAY output is part of its result.
+#   expected_rc : process exit code on the committed data.
+#
+# Paths are relative to this file. Runners execute each program in a fresh
+# scratch directory with the inputs copied in under their logical names.
+
+[defaults]
+copybook_dirs = ["copybooks"]
+cobc_flags = ["-x", "-fstatic-call"]
+
+[programs.CUSTRPT]
+sources = ["src/CUSTRPT.cbl"]
+inputs = { CUSTIN = "data/customers.dat" }
+outputs = ["RPTOUT"]
+stdout = false
+expected_rc = 0
+
+[programs.INTCALC]
+sources = ["src/INTCALC.cbl", "src/RATECALC.cbl"]
+inputs = { ACCTIN = "data/accounts.dat" }
+outputs = ["INTOUT"]
+stdout = false
+expected_rc = 0
+
+[programs.TXNPOST]
+sources = ["src/TXNPOST.cbl"]
+inputs = { ACCTIN = "data/accounts.dat", TXNIN = "data/transactions.dat" }
+outputs = ["ACCTNEW", "TXNERR"]
+stdout = true
+expected_rc = 0
+
+[programs.PAYROLL]
+sources = ["src/PAYROLL.cbl"]
+inputs = { PAYIN = "data/payroll.dat" }
+outputs = ["PAYRPT"]
+stdout = false
+expected_rc = 0

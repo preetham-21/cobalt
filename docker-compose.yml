@@ -1,0 +1,19 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: cobalt-dev:0.1.0
+    working_dir: /app
+    volumes:
+      - .:/app
+      - maven-cache:/home/ubuntu/.m2
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      COBALT_IN_DOCKER: "1"
+      COBALT_ROOT: /app
+
+volumes:
+  maven-cache:

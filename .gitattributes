@@ -1,0 +1,10 @@
+# Everything is LF. COBOL sources are column-sensitive and data files are
+# fixed-width records, so a CRLF conversion silently corrupts both.
+* text=auto eol=lf
+
+*.cbl  text eol=lf
+*.cob  text eol=lf
+*.cpy  text eol=lf
+*.dat  text eol=lf
+*.sh   text eol=lf
+Makefile text eol=lf

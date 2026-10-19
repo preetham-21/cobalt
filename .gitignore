@@ -1,0 +1,27 @@
+# secrets
+.env
+
+# python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# external corpus (fetched by scripts/fetch_corpus.sh)
+corpus/carddemo/
+
+# generated artefacts
+workspace/*
+!workspace/.gitkeep
+runs/*
+!runs/.gitkeep
+
+# editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

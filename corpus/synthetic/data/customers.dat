@@ -1,0 +1,37 @@
+100001FIRST RECORD CLOSED      MW+000015000000100000C                           
+100002ZERO BALANCE             MW+000000000000050000A                           
+100003ONE CENT CREDIT          MW-000000001000050000A                           
+100103DONALD HOARE             MW+000259901000050000A                           
+100124ADA HAMILTON             MW+001623537000250000A                           
+100166ADA PERLMAN              MW+002998202000250000A                           
+100510NIKLAUS THOMPSON         MW+000269207000050000A                           
+100522NIKLAUS ALLEN            MW+001929371000100000A                           
+100576MARGARET PERLMAN         MW+002653315000050000A                           
+100620LYNN HAMILTON            MW+001413831000050000A                           
+200001MAX BALANCE AT LIMIT     NE+999999999999999999A                           
+200002ONE CENT OVER LIMIT      NE+000250001000250000A                           
+200003MAX CREDIT BALANCE       NE-999999999000000000A                           
+200017KEN TURING               NE+002768900000050000A                           
+200069ALAN RITCHIE             NE+002179667000100000A                           
+200263KEN THOMPSON             NE+000068544000100000A                           
+200418LYNN DIJKSTRA            NE+002525786002500000A                           
+200685TONY ALLEN               NE+002106043000500000A                           
+200845BARBARA LISKOV           NE+002990196000050000A                           
+200961FRANCES WIRTH            NE+002967811001000000A                           
+300001CLOSED AT REGION START   NW+000007550000010000C                           
+300072EDSGER THOMPSON          NW+002854349000500000A                           
+300206TONY KNUTH               NW+002049345000100000A                           
+300295ALAN CONWAY              NW+000847764000500000A                           
+300372GRACE DIJKSTRA           NW+001524287000500000A                           
+300695DENNIS THOMPSON          NW+000698574000500000A                           
+300813EDSGER HOARE             NW+001507333000500000A                           
+300937KEN HAMILTON             NW+001185917000050000C                           
+400068DONALD HOPPER            SE+002250218000050000A                           
+400204GRACE PERLMAN            SE+000713103000250000A                           
+400281DENNIS LISKOV            SE+000996421000500000A                           
+400837ADA TURING               SE+000210658001000000C                           
+400895ADA SAMMET               SE+000045934000500000A                           
+400958DENNIS ALLEN             SE+000497559000100000A                           
+400993ALAN TURING              SE+000136011001000000A                           
+500001ALL CLOSED REGION A      SW+000001000000010000C                           
+500002ALL CLOSED REGION B      SW+000002000000010000C                           
