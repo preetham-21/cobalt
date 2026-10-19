@@ -71,7 +71,7 @@ def test_graph_ablation_disables_query(settings) -> None:
 
 
 def test_write_file_is_confined(settings) -> None:
-    ctx = context(settings, "INTCALC")
+    ctx = context(settings, "INTCALC", write_cases=True)
     tools = build_tools(ctx)
     ok = tools.call(
         "1",

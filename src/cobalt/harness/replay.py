@@ -81,3 +81,59 @@ def replay_script(
 def replay_client(program: str, baselines: Path, **kwargs: Any) -> ScriptedClient:
     """A :class:`ScriptedClient` that re-enacts ``program``'s baseline migration."""
     return ScriptedClient(replay_script(program, baselines, **kwargs))
+
+
+# --------------------------------------------------------------------------- #
+# Scripts for the multi-agent roles
+# --------------------------------------------------------------------------- #
+def analyst_script(program: str) -> list[Any]:
+    """Read the program and report a placeholder analysis."""
+    return [
+        scripted_tool_call("read_cobol", {"name": program, "line_numbers": True}),
+        lambda req: (
+            scripted_tool_call("query_graph", {"kind": "context", "name": program})
+            if _has_tool(req, "query_graph")
+            else scripted_tool_call("list_cases", {})
+        ),
+        scripted_tool_call(
+            "finish",
+            {
+                "success": True,
+                "summary": f"(replay) Analysis of {program}: see the COBOL source; no model ran.",
+            },
+        ),
+    ]
+
+
+def test_writer_script(program: str, inputs: dict[str, Path]) -> list[Any]:
+    """Add one deterministic edge case: the first two records of each input."""
+    script: list[Any] = [scripted_tool_call("list_cases", {})]
+    for logical, path in sorted(inputs.items()):
+        head = "".join(path.read_text(encoding="latin-1").splitlines(keepends=True)[:2])
+        script.append(
+            scripted_tool_call(
+                "write_file", {"path": f"cases/{program}/replay-head/{logical}", "content": head}
+            )
+        )
+    script += [
+        scripted_tool_call("capture_golden", {}),
+        scripted_tool_call(
+            "finish",
+            {
+                "success": True,
+                "summary": "(replay) Added case replay-head: first two records of each input.",
+            },
+        ),
+    ]
+    return script
+
+
+def reviewer_script(program: str) -> list[Any]:
+    """Read the main class and approve."""
+    from cobalt.equivalence.runtime import main_class
+
+    rel = (JAVA_SRC / Path(*main_class(program).split("."))).as_posix() + ".java"
+    return [
+        scripted_tool_call("read_file", {"path": rel}),
+        scripted_tool_call("finish", {"success": True, "summary": "(replay) Approved."}),
+    ]

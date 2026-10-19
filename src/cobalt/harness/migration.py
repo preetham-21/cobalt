@@ -59,7 +59,10 @@ class MigrationContext:
     harness: EquivalenceHarness
     graph: nx.MultiDiGraph
     use_graph: bool = True
-    allow_cases: bool = True
+    allow_cases: bool = True  # include workspace test cases in equivalence
+    write_java: bool = True  # may write the module's Java
+    write_cases: bool = False  # may write test-case inputs (Test Writer)
+    verify_finish: bool = True  # finish(success) must pass equivalence (Translator)
     dependencies: list[str] = field(default_factory=list)
     callers: list[str] = field(default_factory=list)
     summaries: Any = None  # memory store (Stage 6); exposes .get(program) -> str | None
@@ -324,9 +327,11 @@ def build_tools(ctx: MigrationContext) -> ToolRegistry:
     def write_file(args: WriteFileIn) -> str:
         rel = _safe_rel(args.path)
         allowed = [JAVA_SRC / java_package_dir(p) for p in ctx.writable_programs]
-        is_java = rel.suffix == ".java" and any(rel.is_relative_to(a) for a in allowed)
+        is_java = (
+            ctx.write_java and rel.suffix == ".java" and any(rel.is_relative_to(a) for a in allowed)
+        )
         is_case = (
-            ctx.allow_cases
+            ctx.write_cases
             and len(rel.parts) == 4
             and rel.parts[0] == "cases"
             and rel.parts[1] == ctx.program
@@ -338,7 +343,7 @@ def build_tools(ctx: MigrationContext) -> ToolRegistry:
             targets = ", ".join(a.as_posix() + "/" for a in allowed)
             raise ToolError(
                 f"writes are allowed only under {targets}"
-                + (f" and cases/{ctx.program}/<case>/<INPUT>" if ctx.allow_cases else "")
+                + (f" and cases/{ctx.program}/<case>/<INPUT>" if ctx.write_cases else "")
             )
         path = ctx.workspace / rel
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -436,6 +441,10 @@ def build_tools(ctx: MigrationContext) -> ToolRegistry:
         return text
 
     def finish(args: FinishIn) -> ToolReply:
+        if not ctx.verify_finish:
+            return ToolReply(
+                "recorded", {"success": args.success, "summary": args.summary}, terminal=True
+            )
         if not args.success:
             return ToolReply(
                 "acknowledged: migration not completed",
