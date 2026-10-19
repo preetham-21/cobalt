@@ -35,6 +35,9 @@ packages = ["src/cobalt"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = [
+    "sandbox: runs COBOL/Java in the execution sandbox (skipped if none is available)",
+]
 
 [tool.ruff]
 line-length = 100

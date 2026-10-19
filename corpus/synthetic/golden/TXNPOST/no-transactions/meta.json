@@ -1,0 +1,14 @@
+{
+  "case": "no-transactions",
+  "input_sha": "ffb5202b63cf06bf",
+  "missing": [],
+  "outputs": [
+    "ACCTNEW",
+    "TXNERR"
+  ],
+  "program": "TXNPOST",
+  "returncode": 0,
+  "source_sha": "0763c3c35f5956ae",
+  "stdout_compared": true,
+  "toolchain": "cobc (GnuCOBOL) 3.2.0"
+}

@@ -1,0 +1,13 @@
+{
+  "case": "no-trailer",
+  "input_sha": "b41b27e9bc619a39",
+  "missing": [],
+  "outputs": [
+    "PAYRPT"
+  ],
+  "program": "PAYROLL",
+  "returncode": 4,
+  "source_sha": "b16b52e330301e66",
+  "stdout_compared": false,
+  "toolchain": "cobc (GnuCOBOL) 3.2.0"
+}

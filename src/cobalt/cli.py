@@ -10,6 +10,7 @@ from rich.console import Console
 
 from cobalt import __version__
 from cobalt.config import get_settings
+from cobalt.equivalence import cli as equivalence_cli
 from cobalt.graph.cli import app as graph_app
 from cobalt.inventory import available_corpora, build_inventory
 from cobalt.inventory.report import render, to_json, write_json
@@ -22,6 +23,9 @@ app = typer.Typer(
     add_completion=False,
 )
 app.add_typer(graph_app, name="graph")
+app.command("golden")(equivalence_cli.golden)
+app.command("equiv")(equivalence_cli.equiv)
+app.command("sandbox")(equivalence_cli.sandbox)
 
 
 def _version(value: bool) -> None:

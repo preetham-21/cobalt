@@ -49,6 +49,13 @@ class Settings(BaseSettings):
     model: str = "claude-opus-5-5"
     log_level: str = "INFO"
 
+    # execution sandbox (see cobalt.sandbox)
+    sandbox: str = "auto"  # auto | docker | wsl | local
+    docker_image: str = "cobalt-dev:0.1.0"
+    wsl_distro: str = "Ubuntu"
+    wsl_env_script: str = "$HOME/.local/cobalt-toolchain/env.sh"
+    exec_timeout_s: float = 120.0
+
     @property
     def corpus_dir(self) -> Path:
         """Directory holding all corpora."""

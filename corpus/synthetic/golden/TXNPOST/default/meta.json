@@ -1,0 +1,14 @@
+{
+  "case": "default",
+  "input_sha": "05e2ae9c0b43fd1f",
+  "missing": [],
+  "outputs": [
+    "ACCTNEW",
+    "TXNERR"
+  ],
+  "program": "TXNPOST",
+  "returncode": 0,
+  "source_sha": "0763c3c35f5956ae",
+  "stdout_compared": true,
+  "toolchain": "cobc (GnuCOBOL) 3.2.0"
+}

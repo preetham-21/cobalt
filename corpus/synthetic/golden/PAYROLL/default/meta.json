@@ -1,0 +1,13 @@
+{
+  "case": "default",
+  "input_sha": "33b14adaa0254908",
+  "missing": [],
+  "outputs": [
+    "PAYRPT"
+  ],
+  "program": "PAYROLL",
+  "returncode": 0,
+  "source_sha": "b16b52e330301e66",
+  "stdout_compared": false,
+  "toolchain": "cobc (GnuCOBOL) 3.2.0"
+}

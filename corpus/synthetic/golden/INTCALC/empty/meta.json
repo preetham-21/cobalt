@@ -1,0 +1,13 @@
+{
+  "case": "empty",
+  "input_sha": "bcb1e108669b8a97",
+  "missing": [],
+  "outputs": [
+    "INTOUT"
+  ],
+  "program": "INTCALC",
+  "returncode": 0,
+  "source_sha": "ed9c3aaaa662fd65",
+  "stdout_compared": false,
+  "toolchain": "cobc (GnuCOBOL) 3.2.0"
+}

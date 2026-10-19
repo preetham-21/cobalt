@@ -1,0 +1,47 @@
+CUSTRPT             CUSTOMER BALANCE REPORT BY REGION
+CUST-ID NAME                       RG        BALANCE  FLAG
+--------------------------------------------------------------------------------
+100002  ZERO BALANCE               MW           0.00
+100003  ONE CENT CREDIT            MW  -        0.01
+100103  DONALD HOARE               MW       2,599.01  OVER LIMIT
+100124  ADA HAMILTON               MW      16,235.37  OVER LIMIT
+100166  ADA PERLMAN                MW      29,982.02  OVER LIMIT
+100510  NIKLAUS THOMPSON           MW       2,692.07  OVER LIMIT
+100522  NIKLAUS ALLEN              MW      19,293.71  OVER LIMIT
+100576  MARGARET PERLMAN           MW      26,533.15  OVER LIMIT
+100620  LYNN HAMILTON              MW      14,138.31  OVER LIMIT
+          REGION TOTAL  MW                111,473.63
+
+200001  MAX BALANCE AT LIMIT       NE   9,999,999.99
+200002  ONE CENT OVER LIMIT        NE       2,500.01  OVER LIMIT
+200003  MAX CREDIT BALANCE         NE  -9,999,999.99
+200017  KEN TURING                 NE      27,689.00  OVER LIMIT
+200069  ALAN RITCHIE               NE      21,796.67  OVER LIMIT
+200263  KEN THOMPSON               NE         685.44
+200418  LYNN DIJKSTRA              NE      25,257.86  OVER LIMIT
+200685  TONY ALLEN                 NE      21,060.43  OVER LIMIT
+200845  BARBARA LISKOV             NE      29,901.96  OVER LIMIT
+200961  FRANCES WIRTH              NE      29,678.11  OVER LIMIT
+          REGION TOTAL  NE                158,569.48
+
+300072  EDSGER THOMPSON            NW      28,543.49  OVER LIMIT
+300206  TONY KNUTH                 NW      20,493.45  OVER LIMIT
+300295  ALAN CONWAY                NW       8,477.64  OVER LIMIT
+300372  GRACE DIJKSTRA             NW      15,242.87  OVER LIMIT
+300695  DENNIS THOMPSON            NW       6,985.74  OVER LIMIT
+300813  EDSGER HOARE               NW      15,073.33  OVER LIMIT
+          REGION TOTAL  NW                 94,816.52
+
+400068  DONALD HOPPER              SE      22,502.18  OVER LIMIT
+400204  GRACE PERLMAN              SE       7,131.03  OVER LIMIT
+400281  DENNIS LISKOV              SE       9,964.21  OVER LIMIT
+400895  ADA SAMMET                 SE         459.34
+400958  DENNIS ALLEN               SE       4,975.59  OVER LIMIT
+400993  ALAN TURING                SE       1,360.11
+          REGION TOTAL  SE                 46,392.46
+
+GRAND TOTAL BALANCE                       411,252.09
+RECORDS READ                       37
+CUSTOMERS PRINTED                  31
+CLOSED ACCOUNTS SKIPPED             6
+OVER CREDIT LIMIT                  24

@@ -19,7 +19,9 @@ from decimal import Decimal
 from pathlib import Path
 
 SEED = 42
-DEFAULT_OUT = Path(__file__).resolve().parent.parent / "corpus" / "synthetic" / "data"
+SYNTHETIC = Path(__file__).resolve().parent.parent / "corpus" / "synthetic"
+DEFAULT_OUT = SYNTHETIC / "data"
+DEFAULT_CASES = SYNTHETIC / "cases"
 
 FIRST_NAMES = [
     "ADA",
@@ -364,13 +366,50 @@ def generate(out_dir: Path) -> dict[str, Path]:
     return written
 
 
+def edge_cases(out_root: Path) -> dict[str, Path]:
+    """Extra equivalence test cases: ``<PROGRAM>/<case>/<LOGICAL>`` files.
+
+    Inputs a case does not provide fall back to the program's default data.
+    """
+    d = Decimal
+    good = payroll(random.Random(SEED + 1))
+    details = [line for line in good if line.startswith("D")]
+    acct = Account(10000100, "S", d("999.99"), 20190115, "A").record()
+    cases: dict[str, list[str]] = {
+        "CUSTRPT/empty/CUSTIN": [],
+        "CUSTRPT/all-closed/CUSTIN": [
+            Customer(900001, "ONLY CLOSED", "NE", d("5.00"), d("10.00"), "C").record()
+        ],
+        "INTCALC/empty/ACCTIN": [],
+        "TXNPOST/no-transactions/TXNIN": [],
+        "TXNPOST/no-masters/ACCTIN": [],
+        "TXNPOST/single-account/ACCTIN": [acct],
+        "PAYROLL/no-header/PAYIN": details[:3],
+        "PAYROLL/no-trailer/PAYIN": good[:-1],
+        "PAYROLL/bad-hash/PAYIN": [*good[:-1], good[-1][:7] + "000000000001" + good[-1][19:]],
+        "PAYROLL/header-only/PAYIN": good[:1],
+    }
+    written = {}
+    for rel, lines in cases.items():
+        path = out_root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="ascii", newline="\n") as fh:
+            fh.write("".join(line + "\n" for line in lines))
+        written[rel] = path
+    return written
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help="output directory")
+    parser.add_argument("--cases", type=Path, default=DEFAULT_CASES, help="edge-case directory")
     args = parser.parse_args()
     for name, path in generate(args.out).items():
         count = sum(1 for _ in path.open(encoding="ascii"))
         print(f"{name:<18} {count:>4} records  -> {path}")
+    for rel, path in edge_cases(args.cases).items():
+        count = sum(1 for _ in path.open(encoding="ascii"))
+        print(f"case {rel:<32} {count:>4} records")
 
 
 if __name__ == "__main__":

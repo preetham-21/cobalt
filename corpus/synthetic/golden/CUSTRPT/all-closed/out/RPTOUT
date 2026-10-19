@@ -1,0 +1,8 @@
+CUSTRPT             CUSTOMER BALANCE REPORT BY REGION
+CUST-ID NAME                       RG        BALANCE  FLAG
+--------------------------------------------------------------------------------
+GRAND TOTAL BALANCE                             0.00
+RECORDS READ                        1
+CUSTOMERS PRINTED                   0
+CLOSED ACCOUNTS SKIPPED             1
+OVER CREDIT LIMIT                   0

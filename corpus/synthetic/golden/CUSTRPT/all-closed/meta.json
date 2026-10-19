@@ -1,0 +1,13 @@
+{
+  "case": "all-closed",
+  "input_sha": "bbe015e46a50f36b",
+  "missing": [],
+  "outputs": [
+    "RPTOUT"
+  ],
+  "program": "CUSTRPT",
+  "returncode": 0,
+  "source_sha": "79bad974d5955ff3",
+  "stdout_compared": false,
+  "toolchain": "cobc (GnuCOBOL) 3.2.0"
+}

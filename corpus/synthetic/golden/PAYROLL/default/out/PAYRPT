@@ -1,0 +1,35 @@
+PAYROLL REGISTER  PERIOD ENDING 2026/09/25  COBALT SYNTHETIC INDUSTRIES
+EMP-ID NAME                 T           GROSS        TAX           NET
+--------------------------------------------------------------------------------
+700001 EXACTLY FORTY HOURS  H        $735.00      73.50       661.50
+700002 ONE CENT OF OVERTIME H        $735.28      73.52       661.76
+700003 ZERO HOURS           H          $0.00       0.00         0.00
+700004 LONG FORTNIGHT       H      $4,061.58   1,173.47     2,738.11
+700005 EVEN SALARY          S      $2,000.00     418.00     1,482.00
+700006 REPEATING SALARY     S      $3,846.15   1,153.84     2,692.31
+700007 DEDUCTION OVER PAY   H        $150.00       0.00       250.00CR
+700008 TAX EXEMPT           S      $1,600.00       0.00     1,600.00
+700009 BAD PAY TYPE         INVALID PAY TYPE
+700010 BAD TAX CODE         INVALID TAX CODE
+710005 BARBARA HOARE        S      $7,026.99   1,539.90     5,459.68
+710045 JOHN ALLEN           H      $1,735.02     508.24     1,185.90
+710131 TONY LISKOV          H      $6,532.74     650.61     5,855.51
+710154 RADIA HOARE          S      $1,403.74     270.35       958.54
+710175 GRACE RITCHIE        S      $2,243.71     464.84     1,648.08
+710234 ADA ALLEN            H        $709.68     144.29       511.61
+710270 JOHN SAMMET          S      $8,950.86   2,679.83     6,252.95
+710285 MARGARET HOPPER      S      $3,787.51     339.65     3,056.90
+710341 EDSGER SAMMET        H      $1,711.64     504.15     1,176.35
+710374 FRANCES BACKUS       H          $7.89       0.00         3.57CR
+710460 EDSGER WIRTH         S      $7,436.78   2,150.74     5,018.40
+710502 BARBARA ALLEN        H      $2,213.37     462.97     1,641.46
+710551 NIKLAUS SAMMET       S      $2,908.49     270.93     2,438.42
+710588 RADIA CONWAY         H      $4,134.61     893.67     3,168.50
+--------------------------------------------------------------------------------
+TOTAL GROSS                           $63,931.04
+TOTAL TAX                             $13,772.50
+TOTAL NET                             $47,954.41
+EMPLOYEES PAID                     22
+DETAIL RECORDS IN ERROR             2
+UNKNOWN RECORD TYPES                1
+CONTROL CHECK: OK
